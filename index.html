@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cata de medialunas</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2B1A0F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cata">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  html,body{margin:0;height:100%;background:#2B1A0F;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#FBF4E6}
+  #splash{position:fixed;inset:0;background:#2B1A0F;color:#F6EAD7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:10;transition:opacity .5s}
+  #splash img{width:120px;border-radius:28px;animation:late 2.2s ease-in-out infinite}
+  #splash b{font-size:1.25rem;letter-spacing:.02em}
+  #splash small{opacity:.6}
+  @keyframes late{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-10px) rotate(4deg)}}
+  #splash.off{opacity:0;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="splash"><img src="icon-512.png" alt=""><b>Cata de medialunas</b><small>calentando la leche…</small></div>
+<iframe id="app" title="Cata de medialunas" allow="geolocation; camera; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+<script>
+/* Link de la app (ya cargado) */
+const APP = 'https://script.google.com/macros/s/AKfycbx24Vr3vIUnv-VEK59hAXi8deQjlj9s1zgcQO9rtggTZF_JDEgJBiNiLbZ0JN5fKDwogg/exec';
+
+const marco = document.getElementById('app');
+marco.src = APP;
+marco.addEventListener('load', () => setTimeout(() => document.getElementById('splash').classList.add('off'), 400));
+
+/* Puente de ubicación: la cápsula pide el GPS y le pasa las coordenadas a la app */
+window.addEventListener('message', ev => {
+  if (!ev.data || ev.data.tipo !== 'pedirCoords') return;
+  const responder = m => { try { marco.contentWindow.postMessage(m, '*'); } catch (e) {} };
+  if (!navigator.geolocation) { responder({tipo:'sinCoords'}); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => responder({tipo:'coords', lat:p.coords.latitude, lng:p.coords.longitude}),
+    () => responder({tipo:'sinCoords'}),
+    {enableHighAccuracy:true, timeout:12000}
+  );
+});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
