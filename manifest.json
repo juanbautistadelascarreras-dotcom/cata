@@ -1,0 +1,20 @@
+{
+  "name": "Cata de medialunas",
+  "short_name": "Cata",
+  "description": "Nuestra libreta de medialunas y cafés con leche.",
+  "id": "/cata/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#2B1A0F",
+  "theme_color": "#2B1A0F",
+  "lang": "es-AR",
+  "categories": ["food", "lifestyle"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

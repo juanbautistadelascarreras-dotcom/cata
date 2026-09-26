@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cata de medialunas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2B1A0F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cata">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{color-scheme:dark}
+  html,body{margin:0;height:100%;background:#2B1A0F;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:#FBF4E6}
+
+  /* Bienvenida: la medialuna se arma sola */
+  #splash{position:fixed;inset:0;background:radial-gradient(120% 90% at 50% 20%,#3A2417,#1C110A);color:#F6EAD7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:10;transition:opacity .5s}
+  #splash.off{opacity:0;pointer-events:none}
+  .luna{width:150px;height:150px;position:relative}
+  .luna svg{width:100%;height:100%;overflow:visible}
+  .luna .cuerpo{stroke:#E3A11B;stroke-width:26;fill:none;stroke-linecap:round;stroke-dasharray:240;stroke-dashoffset:240;animation:dibujar 1.1s cubic-bezier(.3,1,.4,1) forwards}
+  .luna .brillo{stroke:#F6CE74;stroke-width:6;fill:none;stroke-linecap:round;stroke-dasharray:200;stroke-dashoffset:200;animation:dibujar .9s .45s cubic-bezier(.3,1,.4,1) forwards}
+  .luna .punta{fill:#E3A11B;opacity:0;animation:aparecer .4s 1s forwards}
+  .luna .corte{stroke:#B0760A;stroke-width:4;opacity:0;animation:aparecer .4s 1.2s forwards}
+  @keyframes dibujar{to{stroke-dashoffset:0}}
+  @keyframes aparecer{to{opacity:1}}
+  #splash b{font-size:1.3rem;letter-spacing:.01em}
+  #splash small{opacity:.65;font-size:.95rem}
+  .vapor{position:absolute;top:-28px;left:50%;width:70px;height:40px;transform:translateX(-50%)}
+  .vapor span{position:absolute;bottom:0;width:6px;height:26px;border-radius:9px;background:rgba(246,234,215,.35);animation:subir 2.6s ease-in-out infinite}
+  .vapor span:nth-child(1){left:8px}
+  .vapor span:nth-child(2){left:32px;animation-delay:.8s}
+  .vapor span:nth-child(3){left:56px;animation-delay:1.6s}
+  @keyframes subir{0%{opacity:0;transform:translateY(6px) scaleY(.6)}40%{opacity:.8}100%{opacity:0;transform:translateY(-22px) scaleY(1.2)}}
+
+  /* Píldora flotante: instalar / diagnóstico / actualizar */
+  .pildora{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;display:none;gap:8px;align-items:center;background:#E3A11B;color:#2A1A0F;border:0;border-radius:99px;padding:12px 18px;font-weight:800;font-size:1rem;box-shadow:0 10px 26px rgba(0,0,0,.4);animation:entrar .4s cubic-bezier(.3,1.6,.5,1)}
+  .pildora.ver{display:flex}
+  .pildora.gris{background:#F1E3C6}
+  .pildora.azul{background:#1F4F8C;color:#fff}
+  @keyframes entrar{from{transform:translate(-50%,40px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+  #ayuda{position:fixed;inset:0;background:rgba(15,9,5,.82);z-index:40;display:none;padding:22px;overflow:auto;color:#F6EAD7}
+  #ayuda.ver{display:block}
+  #ayuda .caja{max-width:460px;margin:0 auto;background:#241811;border-radius:24px;padding:20px}
+  #ayuda h2{margin:0 0 4px;font-size:1.3rem}
+  #ayuda p{color:#C3AC93;font-size:.95rem;margin:4px 0 14px}
+  #ayuda ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+  #ayuda li{display:flex;gap:10px;align-items:flex-start;font-size:.96rem;line-height:1.35}
+  #ayuda .ok{color:#7BD39A}
+  #ayuda .mal{color:#F2877F}
+  #ayuda button{margin-top:18px;width:100%;border:0;border-radius:16px;padding:14px;font-weight:800;font-size:1rem;background:#E3A11B;color:#2A1A0F}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="luna">
+    <div class="vapor"><span></span><span></span><span></span></div>
+    <svg viewBox="0 0 200 200" aria-hidden="true">
+      <path class="cuerpo" d="M40 130 A62 62 0 0 1 160 130"/>
+      <path class="brillo" d="M52 122 A52 52 0 0 1 148 122"/>
+      <circle class="punta" cx="40" cy="130" r="17"/>
+      <circle class="punta" cx="160" cy="130" r="17"/>
+      <path class="corte" d="M70 108 L62 92"/>
+      <path class="corte" d="M100 100 L100 82"/>
+      <path class="corte" d="M130 108 L138 92"/>
+    </svg>
+  </div>
+  <b>Cata de medialunas</b>
+  <small id="estado">calentando la leche…</small>
+</div>
+
+<iframe id="app" title="Cata de medialunas" allow="geolocation; camera; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+<button class="pildora" id="btnInstalar">📲 Instalar la app</button>
+<button class="pildora gris" id="btnAyuda">ⓘ ¿Por qué no puedo instalar?</button>
+<button class="pildora azul" id="btnActualizar">🔄 Hay una versión nueva, tocá para actualizar</button>
+
+<div id="ayuda">
+  <div class="caja">
+    <h2>Diagnóstico de instalación 🩺</h2>
+    <p>Chrome exige estos requisitos para ofrecer "Instalar app".</p>
+    <ul id="lista"></ul>
+    <button id="cerrarAyuda">Cerrar</button>
+  </div>
+</div>
+
+<script>
+/* ===== Link de la app (ya cargado) ===== */
+const APP = 'https://script.google.com/macros/s/AKfycbx24Vr3vIUnv-VEK59hAXi8deQjlj9s1zgcQO9rtggTZF_JDEgJBiNiLbZ0JN5fKDwogg/exec';
+
+const marco = document.getElementById('app');
+const splash = document.getElementById('splash');
+const btnInstalar = document.getElementById('btnInstalar');
+const btnAyuda = document.getElementById('btnAyuda');
+const btnActualizar = document.getElementById('btnActualizar');
+const ayuda = document.getElementById('ayuda');
+
+marco.src = APP;
+marco.addEventListener('load', () => setTimeout(() => splash.classList.add('off'), 1200));
+setTimeout(() => splash.classList.add('off'), 9000); // por las dudas, nunca queda tapado
+
+/* ===== Puente de ubicación ===== */
+window.addEventListener('message', ev => {
+  if (!ev.data || ev.data.tipo !== 'pedirCoords') return;
+  const responder = m => {
+    try { if (ev.source) ev.source.postMessage(m, '*'); } catch (e) {}
+    try { marco.contentWindow.postMessage(m, '*'); } catch (e) {}
+  };
+  if (!navigator.geolocation) { responder({ tipo: 'sinCoords' }); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => responder({ tipo: 'coords', lat: p.coords.latitude, lng: p.coords.longitude }),
+    () => responder({ tipo: 'sinCoords' }),
+    { enableHighAccuracy: true, timeout: 12000 }
+  );
+});
+
+/* ===== Instalación ===== */
+let guardado = null;
+const instalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  guardado = e;
+  btnAyuda.classList.remove('ver');
+  if (!instalada()) btnInstalar.classList.add('ver');
+});
+btnInstalar.addEventListener('click', async () => {
+  if (!guardado) return;
+  btnInstalar.classList.remove('ver');
+  guardado.prompt();
+  try { await guardado.userChoice; } catch (e) {}
+  guardado = null;
+});
+window.addEventListener('appinstalled', () => {
+  btnInstalar.classList.remove('ver');
+  btnAyuda.classList.remove('ver');
+});
+setTimeout(() => { if (!guardado && !instalada()) btnAyuda.classList.add('ver'); }, 6000);
+
+/* ===== Diagnóstico ===== */
+btnAyuda.addEventListener('click', diagnosticar);
+document.getElementById('cerrarAyuda').addEventListener('click', () => ayuda.classList.remove('ver'));
+
+async function diagnosticar() {
+  ayuda.classList.add('ver');
+  const lista = document.getElementById('lista');
+  lista.innerHTML = '<li>Revisando…</li>';
+  const pruebas = [];
+  const agregar = (ok, texto, consejo) => pruebas.push({ ok, texto, consejo });
+
+  agregar(location.protocol === 'https:', 'Conexión segura (HTTPS)', 'Abrí el link que empieza con https.');
+
+  let manifiesto = null;
+  try {
+    const r = await fetch('manifest.json', { cache: 'no-store' });
+    manifiesto = await r.json();
+    agregar(true, 'Manifiesto encontrado y legible');
+  } catch (e) {
+    agregar(false, 'Manifiesto no encontrado', 'Falta el archivo manifest.json en GitHub, o quedó con otro nombre.');
+  }
+  if (manifiesto) {
+    const tiene192 = (manifiesto.icons || []).some(i => (i.sizes || '').includes('192'));
+    const tiene512 = (manifiesto.icons || []).some(i => (i.sizes || '').includes('512'));
+    agregar(!!manifiesto.name && !!manifiesto.start_url && ['standalone', 'fullscreen', 'minimal-ui'].includes(manifiesto.display),
+      'Manifiesto completo (nombre, inicio y pantalla)', 'El manifest.json está incompleto.');
+    agregar(tiene192 && tiene512, 'Íconos de 192 y 512 declarados', 'Faltan íconos en el manifest.json.');
+    for (const arch of ['icon-192.png', 'icon-512.png']) {
+      try { const r = await fetch(arch, { method: 'HEAD', cache: 'no-store' }); agregar(r.ok, 'Archivo ' + arch + ' subido', 'Subí ' + arch + ' a GitHub.'); }
+      catch (e) { agregar(false, 'Archivo ' + arch + ' subido', 'Subí ' + arch + ' a GitHub.'); }
+    }
+  }
+
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      agregar(!!reg, 'Service worker registrado', 'Falta el archivo sw.js en GitHub o no se pudo registrar.');
+      agregar(!!navigator.serviceWorker.controller, 'Service worker controlando la página', 'Recargá la página una vez más y volvé a probar.');
+    } catch (e) { agregar(false, 'Service worker registrado', 'Revisá que sw.js esté subido.'); }
+  } else {
+    agregar(false, 'El navegador soporta service workers', 'Usá Chrome o Samsung Internet.');
+  }
+
+  agregar(!instalada(), 'Todavía no está instalada', 'Ya la tenés instalada: buscá el ícono 🥐 en tu pantalla de inicio.');
+  const esChrome = /Chrome|Chromium|SamsungBrowser|Edg/i.test(navigator.userAgent) && !/FBAN|FBAV|Instagram|Line\//i.test(navigator.userAgent);
+  agregar(esChrome, 'Navegador compatible', 'Abrilo en Chrome, no dentro de WhatsApp o Instagram.');
+  agregar(!!guardado, 'Chrome ya ofrece instalarla', 'Usá la app unos 30 segundos y volvé a mirar: Chrome pide un rato de uso antes de ofrecer la instalación.');
+
+  lista.innerHTML = pruebas.map(p =>
+    '<li><span class="' + (p.ok ? 'ok' : 'mal') + '">' + (p.ok ? '✅' : '❌') + '</span><span>' + p.texto +
+    (p.ok ? '' : '<br><span style="opacity:.7">' + p.consejo + '</span>') + '</span></li>').join('');
+}
+
+/* ===== Aviso de versión nueva ===== */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const nuevo = reg.installing;
+      if (!nuevo) return;
+      nuevo.addEventListener('statechange', () => {
+        if (nuevo.state === 'installed' && navigator.serviceWorker.controller) btnActualizar.classList.add('ver');
+      });
+    });
+    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+  }).catch(() => {});
+
+  let recargando = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (recargando) return;
+    recargando = true;
+    location.reload();
+  });
+  btnActualizar.addEventListener('click', async () => {
+    btnActualizar.classList.remove('ver');
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg && reg.waiting) reg.waiting.postMessage({ tipo: 'ACTUALIZAR' });
+    else location.reload();
+  });
+}
+</script>
+</body>
+</html>
